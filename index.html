@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HP-25 Scientific Programmable Calculator Emulator</title>
+<style>
+  :root { --page: #1b1c1e; --gold: #f0b323; --blue: #2e9be6; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: radial-gradient(ellipse at top, #2b2d31 0%, var(--page) 60%); color: #e4e4e0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  body { min-height: 100vh; padding: 18px 12px 40px; }
+  .wrap { display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; align-items: flex-start; }
+  #scaler { position: relative; flex: none; }
+  .calc { width: 400px; height: 692px; position: relative; border-radius: 20px 20px 34px 34px; user-select: none; -webkit-user-select: none;
+    background: linear-gradient(90deg, #555 0%, #c9c9c9 4%, #8a8a8a 8%, #1b1b1b 9%, #1b1b1b 91%, #8a8a8a 92%, #c9c9c9 96%, #555 100%);
+    box-shadow: 0 26px 60px rgba(0,0,0,.65), inset 0 2px 0 rgba(255,255,255,.4); }
+  .top { position: absolute; left: 36px; right: 36px; top: 18px; height: 104px; border-radius: 10px; background: #0e0e0e; box-shadow: inset 0 0 0 2px #2a2a2a; }
+  .disp { position: absolute; left: 10px; right: 10px; top: 12px; height: 80px; border-radius: 6px; background: linear-gradient(180deg, #2a0507, #150203 60%, #200305);
+    box-shadow: inset 0 3px 12px rgba(0,0,0,.95); display: flex; align-items: center; justify-content: center; }
+  .swbar { position: absolute; left: 40px; right: 40px; top: 132px; height: 32px; border-radius: 6px; background: #f2f2ef; border: 1.5px solid #222; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }
+  .sw { display: flex; align-items: center; gap: 6px; font: 700 10px Arial; color: #111; letter-spacing: .4px; }
+  .track { width: 44px; height: 14px; background: #111; border-radius: 3px; position: relative; cursor: pointer; box-shadow: inset 0 1px 3px #000; }
+  .knob { position: absolute; top: 1px; width: 21px; height: 12px; border-radius: 2px; background: repeating-linear-gradient(90deg, #ddd 0 2px, #9a9a9a 2px 4px); transition: left .12s; }
+  .plate { position: absolute; left: 36px; right: 36px; top: 172px; bottom: 54px; border-radius: 6px; background: #1a1a1a; box-shadow: inset 0 0 0 1px #000; }
+  .pend { position: absolute; top: 174px; left: 40px; right: 40px; height: 12px; text-align: right; font: 700 9.5px/12px Arial; color: #8a8a80; letter-spacing: .8px; padding-right: 6px; }
+  .keys { position: absolute; top: 184px; left: 44px; right: 44px; }
+  .r { display: flex; justify-content: space-between; margin-bottom: 3px; position: relative; }
+  .k { display: flex; flex-direction: column; align-items: center; width: 54px; }
+  .r4 { margin-top: 10px; } .r4 .k { width: 64px; } .r4 .k.wide { width: 124px; }
+  .r5 .k { width: 64px; }
+  .gl { height: 17px; font: 700 13px/17px Arial, sans-serif; color: var(--gold); white-space: nowrap; }
+  .key { width: 100%; height: 36px; border-radius: 6px 6px 8px 8px; cursor: pointer; position: relative; overflow: hidden;
+    background: linear-gradient(180deg, #3c3c3c, #161616); box-shadow: 0 3px 0 #000, 0 4px 7px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.18); transition: transform .04s, box-shadow .04s; }
+  .key .t { position: absolute; left: 0; right: 0; top: 0; height: 22px; display: flex; align-items: center; justify-content: center; font: 700 14px Arial, sans-serif; color: #fff; }
+  .key .b { position: absolute; left: 3px; right: 3px; bottom: 2px; height: 12px; border-radius: 0 0 6px 6px; background: #0b0b0b; display: flex; align-items: center; justify-content: center; font: 700 9.5px Arial, sans-serif; color: var(--blue); }
+  .r5 .key { height: 40px; } .r5 .key .t { height: 25px; font-size: 16px; }
+  .key.gd { background: linear-gradient(180deg, #f8c64a, #e0a215); } .key.bl { background: linear-gradient(180deg, #5bb7f2, #2186cf); }
+  .key.gd .t, .key.bl .t { height: 100%; font-size: 17px; }
+  .key.down, .key:active { transform: translateY(2px); box-shadow: 0 1px 0 #000, 0 1px 2px rgba(0,0,0,.4); }
+  .clear { position: absolute; left: 136px; right: 0; top: -5px; height: 8px; border: 1.5px solid var(--gold); border-bottom: none; }
+  .clear span { position: absolute; left: 50%; top: -7px; transform: translateX(-50%); background: #1a1a1a; padding: 0 4px; font: 700 9px Arial; color: var(--gold); letter-spacing: .5px; }
+  .brand { position: absolute; left: 36px; right: 36px; bottom: 16px; height: 30px; border-radius: 4px; background: #101010; display: flex; align-items: center; gap: 16px; padding: 0 12px; box-shadow: inset 0 0 0 1px #2c2c2c; }
+  .brand .logo { width: 34px; height: 16px; border-radius: 2px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font: italic 900 11px Arial; color: #fff; background: #1f6fb5; }
+  .brand .hp { font: 700 10px Arial; letter-spacing: 5px; color: #ddd; }
+  .brand .m { margin-left: auto; font: 700 13px Arial; color: #ddd; }
+
+  .side { width: min(540px, 100%); display: flex; flex-direction: column; gap: 14px; }
+  .card { background: #25272a; border: 1px solid #383b40; border-radius: 10px; padding: 14px 16px; }
+  .card h2 { font-size: 13px; margin: 0 0 8px; letter-spacing: .7px; color: #f1f1ee; text-transform: uppercase; }
+  .card p, .card li { font-size: 12.5px; line-height: 1.5; color: #c9c9c4; margin: 6px 0; }
+  .card ul { padding-left: 18px; margin: 6px 0; }
+  textarea { width: 100%; height: 300px; background: #16171a; color: #ececE6; border: 1px solid #43464c; border-radius: 6px; padding: 8px; font: 12.5px/1.45 ui-monospace, Menlo, Consolas, monospace; resize: vertical; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; align-items: center; font-size: 12px; }
+  button, select { background: #363a40; color: #f0f0ec; border: 1px solid #50545b; border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+  button:hover { background: #41454c; }
+  .msg { min-height: 18px; font-size: 12px; }
+  table.ref { border-collapse: collapse; width: 100%; font-size: 12px; }
+  table.ref td { padding: 3px 6px; border-bottom: 1px solid #36393e; color: #c9c9c4; vertical-align: top; }
+  table.ref td:first-child { white-space: nowrap; color: #f0f0ec; }
+  kbd { background: #363a40; border: 1px solid #50545b; border-radius: 3px; padding: 0 4px; font-size: 11px; }
+  code { color: #f2c66b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="scaler">
+    <div class="calc" id="calc">
+      <div class="top"><div class="disp"><canvas id="led"></canvas></div></div>
+      <div class="swbar">
+        <div class="sw"><span>OFF</span><div class="track" id="pwr" title="Power switch"><div class="knob" id="pwrK"></div></div><span>ON</span></div>
+        <div class="sw"><span>PRGM</span><div class="track" id="mode" title="PRGM-RUN switch"><div class="knob" id="modeK"></div></div><span>RUN</span></div>
+      </div>
+      <div class="plate"></div>
+      <div class="pend" id="pend"></div>
+      <div class="keys" id="keys"></div>
+      <div class="brand"><div class="logo">hp</div><span class="hp">HEWLETT · PACKARD</span><span class="m">25</span></div>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <h2>Program memory</h2>
+      <div class="bar">
+        <span>Program display:</span>
+        <select id="pv"><option value="mn">Mnemonics (HP-41 style)</option><option value="kc">Keycodes (original HP-25)</option></select>
+        <span>Speed:</span>
+        <select id="spd"><option value="fast">Fast</option><option value="slow">Approx. original</option></select>
+      </div>
+      <textarea id="src" spellcheck="false" placeholder="01 X^2
+02 PI
+03 *
+04 GTO 00"></textarea>
+      <div class="bar">
+        <button id="pShow">Show program</button>
+        <button id="pLoad">Load listing into memory</button>
+        <button id="pCopy">Copy text</button>
+        <select id="pSample"><option value="">Sample programs…</option><option value="sphere">Sphere surface area (handbook p.78)</option><option value="quad">Quadratic roots</option><option value="fact">Factorial with a loop</option><option value="prime">Prime test</option></select>
+      </div>
+      <div class="msg" id="pMsg"></div>
+      <p>Listings may be written in mnemonics (<code>STO 1</code>, <code>ST+ 1</code>, <code>X≥Y?</code> or <code>X&gt;=Y?</code>, <code>GTO 07</code>) or in HP-25 keycodes (<code>23 51 01</code>), with or without step numbers; up to 49 steps. Memory, registers and settings are kept in this browser; the power switch OFF clears them, as on the real HP-25.</p>
+    </div>
+    <div class="card">
+      <h2>Quick reference</h2>
+      <table class="ref">
+        <tr><td><kbd>0</kbd>–<kbd>9</kbd> <kbd>.</kbd> <kbd>+</kbd> <kbd>-</kbd> <kbd>*</kbd> <kbd>/</kbd></td><td>Digits and arithmetic · <kbd>Enter</kbd> ENTER↑ · <kbd>Backspace</kbd> CLx</td></tr>
+        <tr><td><kbd>f</kbd> <kbd>g</kbd></td><td>Gold and blue prefix keys</td></tr>
+        <tr><td><kbd>s</kbd> <kbd>r</kbd> <kbd>t</kbd></td><td>STO · RCL · GTO</td></tr>
+        <tr><td><kbd>n</kbd> <kbd>x</kbd> <kbd>y</kbd> <kbd>d</kbd> <kbd>z</kbd></td><td>CHS · EEX · x⇄y · R↓ · Σ+</td></tr>
+        <tr><td><kbd>Space</kbd> · <kbd>→</kbd> <kbd>←</kbd></td><td>R/S · SST · BST</td></tr>
+        <tr><td><kbd>p</kbd> · <kbd>Esc</kbd></td><td>PRGM ⇄ RUN switch · f PREFIX (cancel a prefix)</td></tr>
+      </table>
+      <ul>
+        <li>In PRGM mode the display shows <code>04 STO 1</code> instead of <code>04  23 01</code>. Keying an instruction writes it into the next step (the HP-25 overwrites; it does not insert). SST/BST move through memory.</li>
+        <li>In RUN mode: <b>f PRGM</b> resets to step 00, <b>GTO nn</b> positions the program, <b>R/S</b> runs it, <b>SST</b> executes one step. Unused steps hold <code>GTO 00</code>; reaching step 00 stops the program.</li>
+        <li>Σ+ accumulates in R3 (n), R4 (Σy), R5 (Σxy), R6 (Σx²), R7 (Σx); <b>f x̄</b> and <b>f s</b> use them. A storage overflow shows <code>OF</code>.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+<script>
+/* ===================== HP-25 core (DOM-free) ===================== */
+'use strict';
+const DIGIT_OF = { '72': 0, '62': 1, '63': 2, '64': 3, '52': 4, '53': 5, '54': 6, '42': 7, '43': 8, '44': 9 };
+const NSTEPS = 49, NCELL = 12, MAXV = 9.999999999e99, EMPTY = '13 00';
+class CalcErr extends Error { constructor() { super('Error'); } }
+const E = () => { throw new CalcErr(); };
+function norm(v) {
+  if (typeof v !== 'number' || isNaN(v)) E();
+  if (!isFinite(v)) return v > 0 ? MAXV : -MAXV;
+  if (v === 0 || Math.abs(v) < 1e-99) return 0;
+  let r = +v.toPrecision(10);
+  if (Math.abs(r) > MAXV) r = r > 0 ? MAXV : -MAXV;
+  return r;
+}
+const isInt = v => Math.abs(v - Math.round(v)) < 1e-12 * Math.max(1, Math.abs(v));
+
+/* ---------- display cells ---------- */
+function cellsFromText(t) {
+  const cells = [];
+  for (const ch of t) {
+    if (ch === '.' && cells.length && !cells[cells.length - 1].dp && /[0-9 \-]/.test(cells[cells.length - 1].ch)) { cells[cells.length - 1].dp = true; continue; }
+    cells.push({ ch, dp: false });
+  }
+  while (cells.length < NCELL) cells.push({ ch: ' ', dp: false });
+  return cells.slice(0, NCELL);
+}
+function setExp(cells, e) {
+  const es = String(Math.abs(e)).padStart(2, '0');
+  cells[9] = { ch: e < 0 ? '-' : ' ', dp: false }; cells[10] = { ch: es[0], dp: false }; cells[11] = { ch: es[1], dp: false };
+}
+function sciParts(a, dec, eng) {
+  if (a === 0) { let m = (0).toFixed(dec); if (m.indexOf('.') < 0) m += '.'; return { m, e: 0 }; }
+  let [m, e] = a.toExponential(dec).split('e'); e = +e;
+  if (e > 99) { m = '9.' + '9'.repeat(dec); e = 99; }
+  if (eng) { const sig = m.replace('.', ''); const sh = ((e % 3) + 3) % 3; e -= sh; let d = sig; while (d.length < sh + 1) d += '0'; m = d.slice(0, sh + 1) + '.' + d.slice(sh + 1); }
+  if (m.indexOf('.') < 0) m += '.';
+  return { m, e };
+}
+function fmtNumber(x, mode, n) {
+  const neg = x < 0, a = Math.abs(x);
+  if (mode === 'FIX') {
+    let ok = !(a >= 1e10);
+    if (ok) {
+      const intDigits = a < 1 ? 1 : Math.floor(Math.log10(a)) + 1;
+      let dec = Math.max(0, Math.min(n, 10 - intDigits));
+      let s = a.toFixed(dec);
+      if (s.replace('.', '').replace(/^0+(?=\d)/, '').length > 10 && dec > 0) { dec--; s = a.toFixed(dec); }
+      if ((a !== 0 && +s === 0) || Math.floor(+s) >= 1e10) ok = false;
+      else return cellsFromText((neg ? '-' : ' ') + s + (dec === 0 ? '.' : ''));
+    }
+    mode = 'SCI';
+  }
+  const { m, e } = sciParts(a, Math.min(n, 7), mode === 'ENG');
+  const cells = cellsFromText((neg ? '-' : ' ') + m);
+  for (let i = 9; i < NCELL; i++) cells[i] = { ch: ' ', dp: false };
+  setExp(cells, e);
+  return cells;
+}
+
+/* ---------- instructions ---------- */
+const SIMPLE = {
+  '73': '.', '31': 'ENTER^', '32': 'CHS', '33': 'EEX', '34': 'CLX', '41': '-', '51': '+', '61': '*', '71': '/', '74': 'R/S',
+  '21': 'X<>Y', '22': 'RDN', '25': 'Σ+', '14 25': 'Σ-', '14 21': 'MEAN', '14 22': 'SDEV', '15 21': '%', '15 22': '1/X',
+  '15 32': 'DEG', '15 33': 'RAD', '15 34': 'GRAD', '14 33': 'CLRG', '14 34': 'CLST',
+  '14 41': 'X<Y?', '15 41': 'X<0?', '14 51': 'X≥Y?', '15 51': 'X≥0?', '14 61': 'X≠Y?', '15 61': 'X≠0?', '14 71': 'X=Y?', '15 71': 'X=0?',
+  '14 07': 'LN', '15 07': 'E^X', '14 08': 'LOG', '15 08': '10^X', '14 09': 'P-R', '15 09': 'R-P',
+  '14 04': 'SIN', '15 04': 'ASIN', '14 05': 'COS', '15 05': 'ACOS', '14 06': 'TAN', '15 06': 'ATAN',
+  '14 01': 'INT', '15 01': 'FRC', '14 02': 'SQRT', '15 02': 'X^2', '14 03': 'Y^X', '15 03': 'ABS',
+  '14 00': 'HMS', '15 00': 'HR', '14 73': 'LASTX', '15 73': 'PI', '14 74': 'PSE', '15 74': 'NOP'
+};
+function mnemonic(code) {
+  if (SIMPLE[code]) return SIMPLE[code];
+  if (/^0\d$/.test(code)) return code[1];
+  const p = code.split(' ');
+  if (p[0] === '13') return 'GTO ' + p[1];
+  if (p[0] === '23') return p.length === 2 ? 'STO ' + p[1][1] : 'ST' + { '51': '+', '41': '-', '61': '*', '71': '/' }[p[1]] + ' ' + p[2][1];
+  if (p[0] === '24') return 'RCL ' + p[1][1];
+  if (p[0] === '14' && ['11', '12', '13'].includes(p[1])) return { '11': 'FIX ', '12': 'SCI ', '13': 'ENG ' }[p[1]] + p[2][1];
+  return '??';
+}
+const CODES = (() => {
+  const out = Object.keys(SIMPLE);
+  for (let d = 0; d <= 9; d++) { out.push('0' + d); ['11', '12', '13'].forEach(k => out.push('14 ' + k + ' 0' + d)); }
+  for (let r = 0; r <= 7; r++) { out.push('23 0' + r, '24 0' + r); ['51', '41', '61', '71'].forEach(o => out.push('23 ' + o + ' 0' + r)); }
+  for (let s = 0; s <= NSTEPS; s++) out.push('13 ' + String(s).padStart(2, '0'));
+  return out;
+})();
+const MNEM = (() => {
+  const m = new Map(); CODES.forEach(c => m.set(mnemonic(c).toUpperCase(), c));
+  const alias = { 'ENTER': '31', 'ENTER↑': '31', 'X<=Y?': null, 'X>=Y?': '14 51', 'X>=0?': '15 51', 'X#Y?': '14 61', 'X!=Y?': '14 61', 'X#0?': '15 61', 'X!=0?': '15 61',
+    'X<>Y?': '14 61', 'X<>0?': '15 61', 'X⇄Y': '21', 'R↓': '22', 'RDOWN': '22', 'SUM+': '25', 'S+': '25', 'E+': '25', 'SUM-': '14 25', 'S-': '14 25', 'E-': '14 25',
+    'X̄': '14 21', 'XBAR': '14 21', 'S': '14 22', 'SQR': '14 02', '√X': '14 02', 'X2': '15 02', 'YX': '14 03', 'FRAC': '15 01', 'LSTX': '14 73', 'LAST X': '14 73',
+    'PAUSE': '14 74', 'GRD': '15 34', 'CLREG': '14 33', 'CL REG': '14 33', 'CLSTK': '14 34', 'CL STK': '14 34', 'STK': '14 34', 'REG': '14 33',
+    '->R': '14 09', '->P': '15 09', '→R': '14 09', '→P': '15 09', '->H.MS': '14 00', '->H': '15 00', 'H.MS': '14 00', 'H': '15 00', 'EXP': '15 07', 'ALOG': '15 08',
+    'X': '61', '×': '61', '÷': '71', 'RS': '74', 'STOP': '74', 'R/S': '74' };
+  for (const k in alias) if (alias[k]) m.set(k, alias[k]);
+  return m;
+})();
+function parseLine(line) {
+  let s = line.replace(/\/\/.*$|;.*$|#.*$/, '').trim();
+  if (!s) return undefined;
+  const asCode = t => { if (/^\d\d(\s+\d\d){0,2}$/.test(t)) { const c = t.split(/\s+/).join(' '); if (CODES.includes(c)) return c; } return null; };
+  let c = asCode(s); if (c) return c;
+  const m0 = s.match(/^(\d{1,2})\s*[:.)\]]?\s+(\S.*)$/);
+  if (m0) { const rest = m0[2].trim(); c = asCode(rest); if (c) return c; s = rest; }
+  if (/^\d$/.test(s)) return '0' + s;
+  let t = s.toUpperCase().replace(/\s+/g, ' ');
+  t = t.replace(/^STO ?([+\-*/×÷]) ?/, (a, b) => 'ST' + ({ '×': '*', '÷': '/' }[b] || b) + ' ').replace(/^(ST[+\-*/])(\d)/, '$1 $2')
+    .replace(/^(STO|RCL|ST[+\-*/]) ?0?(\d)$/, '$1 $2').replace(/^(FIX|SCI|ENG) ?(\d)$/, '$1 $2').replace(/^GTO ?(\d)$/, 'GTO 0$1').replace(/^GTO ?(\d\d)$/, 'GTO $1');
+  if (MNEM.has(t)) return MNEM.get(t);
+  if (MNEM.has(t.replace(/ /g, ''))) return MNEM.get(t.replace(/ /g, ''));
+  return null;
+}
+
+/* ---------- calculator ---------- */
+class HP25 {
+  constructor(hooks) {
+    this.h = hooks || {}; this.speed = 'fast'; this.codeView = false;
+    this.reset(); this.mode = 'RUN';
+    const s = this.h.load && this.h.load(); if (s) this.restore(s);
+  }
+  changed() { if (this.h.changed) this.h.changed(); }
+  persist() { if (this.h.save) this.h.save(this.snapshot()); }
+  snapshot() { return { st: [this.x, this.y, this.z, this.t, this.lastx], reg: this.reg, prog: this.prog, pc: this.pc, dm: this.dispMode, dn: this.dispN, ang: this.angle, mode: this.mode, on: this.on, speed: this.speed, cv: this.codeView, lift: this.lift }; }
+  restore(s) {
+    try { [this.x, this.y, this.z, this.t, this.lastx] = s.st; this.reg = s.reg.slice(0, 8); this.prog = s.prog.slice(0, NSTEPS + 1); this.pc = s.pc;
+      this.dispMode = s.dm; this.dispN = s.dn; this.angle = s.ang; this.mode = s.mode; this.on = s.on !== false; this.speed = s.speed || 'fast'; this.codeView = !!s.cv; this.lift = s.lift !== false;
+    } catch (e) { this.reset(); }
+  }
+  reset() {
+    this.on = true; this.x = this.y = this.z = this.t = this.lastx = 0; this.reg = new Array(8).fill(0);
+    this.prog = new Array(NSTEPS + 1).fill(EMPTY); this.prog[0] = ''; this.pc = 0;
+    this.dispMode = 'FIX'; this.dispN = 2; this.angle = 'DEG'; this.lift = true;
+    this.entry = null; this.err = false; this.of = false; this.running = false; this.seq = []; this.prefix = null; this.msg = null;
+  }
+  setPower(on) { if (on === this.on) return; this.stop(); if (on) { const m = this.mode; this.reset(); this.mode = m; } else this.on = false; this.persist(); this.changed(); }
+  setMode(m) { if (m === this.mode) return; this.stop(); this.terminate(); this.seq = []; this.prefix = null; this.msg = null; this.mode = m; this.persist(); this.changed(); }
+
+  push(v) { this.t = this.z; this.z = this.y; this.y = this.x; this.x = v; }
+  enterValue(v) { if (this.lift) this.push(v); else this.x = v; this.lift = true; }
+  drop() { this.x = this.y; this.y = this.z; this.z = this.t; }
+  monad(f) { const x = this.x; const r = f(x); this.lastx = x; this.x = norm(r); this.lift = true; }
+  dyad(f) { const x = this.x, y = this.y; const r = f(y, x); this.lastx = x; this.drop(); this.x = norm(r); this.lift = true; }
+  terminate() { this.entry = null; }
+  entryVal() { const e = this.entry; let m = e.mant || '0'; if (m === '.' || m === '0.') m = '0'; let v = parseFloat(m + (e.exp !== null ? 'e' + (e.eneg ? '-' : '') + (e.exp || '0') : '')); return norm(e.neg ? -v : v); }
+  digitKey(code) {
+    if (!this.entry) { this.entry = { mant: '', exp: null, neg: false, eneg: false }; if (this.lift) this.push(0); this.lift = true; }
+    const e = this.entry;
+    if (code === '33') {
+      if (e.exp !== null) return;
+      const intPart = e.mant.split('.')[0].replace(/^0+/, '');
+      if (intPart.length > 8) return;   // EEX overridden (more than 8 digits left of the point)
+      if (!e.mant || e.mant === '.') e.mant = '1'; e.exp = '';
+    } else if (code === '73') { if (e.exp === null && e.mant.indexOf('.') < 0) e.mant += e.mant ? '.' : '0.'; }
+    else { const d = code[1]; if (e.exp !== null) e.exp = (e.exp + d).slice(-2); else if (e.mant.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '').length < 10) e.mant += d; }
+    this.x = this.entryVal();
+  }
+  chs() { if (this.entry) { const e = this.entry; if (e.exp !== null) e.eneg = !e.eneg; else e.neg = !e.neg; this.x = this.entryVal(); return; } this.x = -this.x; }
+  ang(v, to) { const k = this.angle === 'DEG' ? Math.PI / 180 : this.angle === 'GRAD' ? Math.PI / 200 : 1; return to ? v * k : v / k; }
+
+  /* ---------- display ---------- */
+  display() {
+    if (!this.on) return { cells: cellsFromText(''), off: true };
+    if (this.msg) return { cells: this.msg.cells };
+    if (this.running && !this.pausing) return { flicker: true };
+    if (this.err) return { cells: cellsFromText('  Error') };
+    if (this.of) return { cells: cellsFromText('  OF') };
+    if (this.mode === 'PRGM') return { cells: this.progCells(this.pc) };
+    if (this.entry) return { cells: this.entryCells() };
+    return { cells: fmtNumber(this.x, this.dispMode, this.dispN) };
+  }
+  progCells(n) {
+    const step = String(n).padStart(2, '0'); const code = this.prog[n];
+    if (n === 0) return cellsFromText(step);
+    if (this.codeView) {
+      const cells = cellsFromText(step); const s = code.length === 2 ? code : code;
+      for (let i = 0; i < s.length; i++) cells[NCELL - s.length + i] = { ch: s[i], dp: false };
+      return cells;
+    }
+    return cellsFromText(step + ' ' + mnemonic(code));
+  }
+  entryCells() {
+    const e = this.entry; let m = e.mant || '0'; if (m.indexOf('.') < 0) m += '.'; if (m.startsWith('.')) m = '0' + m;
+    const cells = cellsFromText((e.neg ? '-' : ' ') + m);
+    if (e.exp !== null) { for (let i = 9; i < NCELL; i++) cells[i] = { ch: ' ', dp: false }; const es = (e.exp || '').padStart(2, '0'); cells[9] = { ch: e.eneg ? '-' : ' ', dp: false }; cells[10] = { ch: es[0], dp: false }; cells[11] = { ch: es[1], dp: false }; }
+    return cells;
+  }
+  sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  /* ---------- keystroke parser (keys are positional codes) ---------- */
+  parse(k) {
+    const isD = c => DIGIT_OF[c] !== undefined, dg = c => '0' + DIGIT_OF[c];
+    const s = this.seq, pre = this.prefix;
+    const fin = r => { this.seq = []; this.prefix = null; return r; };
+    if (k === '31' && (pre === '14')) return fin({ act: 'none' });   // f PREFIX cancels
+    if (s.length) {
+      const h = s[0];
+      if (h === 'GTO') { if (!isD(k)) return fin({ act: 'none' }); s.push(DIGIT_OF[k]); if (s.length === 3) { const n = s[1] * 10 + s[2]; return fin(n > NSTEPS ? { act: 'bad' } : { code: '13 ' + String(n).padStart(2, '0') }); } return null; }
+      if (h === 'FIX' || h === 'SCI' || h === 'ENG') return fin(isD(k) ? { code: '14 ' + { FIX: '11', SCI: '12', ENG: '13' }[h] + ' ' + dg(k) } : { act: 'none' });
+      if (h === 'STO') {
+        if (s.length === 1 && ['51', '41', '61', '71'].includes(k)) { s.push(k); return null; }
+        if (!isD(k) || DIGIT_OF[k] > 7) return fin(isD(k) ? { act: 'bad' } : { act: 'none' });
+        return fin({ code: s.length === 2 ? '23 ' + s[1] + ' ' + dg(k) : '23 ' + dg(k) });
+      }
+      if (h === 'RCL') { if (!isD(k) || DIGIT_OF[k] > 7) return fin(isD(k) ? { act: 'bad' } : { act: 'none' }); return fin({ code: '24 ' + dg(k) }); }
+      return fin({ act: 'none' });
+    }
+    if (k === '14' || k === '15') { this.prefix = k; return null; }
+    if (pre === '14') {
+      if (k === '11') { this.prefix = null; this.seq = ['FIX']; return null; }
+      if (k === '12') { this.prefix = null; this.seq = ['SCI']; return null; }
+      if (k === '13') { this.prefix = null; this.seq = ['ENG']; return null; }
+      if (k === '32') return fin({ act: 'clprgm' });
+      if (isD(k)) return fin({ code: '14 ' + dg(k) });
+      if (['21', '22', '25', '33', '34', '41', '51', '61', '71', '73', '74'].includes(k)) return fin({ code: '14 ' + k });
+      return fin({ act: 'none' });
+    }
+    if (pre === '15') {
+      if (isD(k)) return fin({ code: '15 ' + dg(k) });
+      if (['21', '22', '32', '33', '34', '41', '51', '61', '71', '73', '74'].includes(k)) return fin({ code: '15 ' + k });
+      return fin({ act: 'none' });
+    }
+    if (isD(k)) return fin({ code: dg(k) });
+    if (['73', '31', '32', '33', '34', '41', '51', '61', '71', '74', '21', '22', '25'].includes(k)) return fin({ code: k });
+    if (k === '13') { this.seq = ['GTO']; return null; }
+    if (k === '23') { this.seq = ['STO']; return null; }
+    if (k === '24') { this.seq = ['RCL']; return null; }
+    if (k === '11') return fin({ act: 'sst' });
+    if (k === '12') return fin({ act: 'bst' });
+    return fin({ act: 'none' });
+  }
+  pendingText() {
+    if (this.prefix) return this.prefix === '14' ? 'f' : 'g';
+    if (!this.seq.length) return '';
+    const h = this.seq[0];
+    if (h === 'STO' && this.seq[1]) return 'STO ' + { '51': '+', '41': '−', '61': '×', '71': '÷' }[this.seq[1]];
+    if (h === 'GTO') return 'GTO ' + this.seq.slice(1).join('');
+    return h;
+  }
+
+  /* ---------- keyboard ---------- */
+  press(k) {
+    if (!this.on) return;
+    if (this.running) { this.stop(); this.changed(); return; }   // any key stops a running program
+    if (this.msg) return;
+    if (this.err || this.of) {
+      this.err = false; this.of = false;
+      // CLx or a digit clears the error and operates; other keys only clear it
+      const d = DIGIT_OF[k] !== undefined || k === '73';
+      if (!(k === '34' || d) || this.seq.length || this.prefix) { this.seq = []; this.prefix = null; this.changed(); return; }
+    }
+    if (this.mode === 'PRGM') this.prgmKey(k); else this.runKey(k);
+    this.changed();
+  }
+  prgmKey(k) {
+    const r = this.parse(k); if (!r) return;
+    if (r.code) { this.pc = this.pc >= NSTEPS ? 1 : this.pc + 1; this.prog[this.pc] = r.code; this.persist(); return; }
+    if (r.act === 'sst') this.pc = this.pc >= NSTEPS ? 0 : this.pc + 1;
+    else if (r.act === 'bst') this.pc = this.pc <= 0 ? NSTEPS : this.pc - 1;
+    else if (r.act === 'clprgm') { this.prog = new Array(NSTEPS + 1).fill(EMPTY); this.prog[0] = ''; this.pc = 0; this.persist(); }
+    else if (r.act === 'bad') this.err = true;
+  }
+  runKey(k) {
+    const r = this.parse(k); if (!r) return;
+    if (r.act) {
+      if (r.act === 'sst') { this.sst(); return; }
+      if (r.act === 'bst') { this.terminate(); this.pc = this.pc <= 0 ? 0 : this.pc - 1; this.flashStep(this.pc); return; }
+      if (r.act === 'clprgm') { this.terminate(); this.pc = 0; return; }
+      if (r.act === 'bad') { this.err = true; this.terminate(); }
+      return;
+    }
+    const code = r.code;
+    if (/^0\d$/.test(code) || code === '73' || code === '33') { this.digitKey(code); return; }
+    if (code === '32') { this.chs(); return; }
+    if (code === '74') { this.terminate(); this.run(); return; }
+    if (code.startsWith('13 ')) { this.terminate(); this.pc = +code.slice(3); return; }
+    if (code === '14 74') { this.terminate(); this.pauseView(); return; }
+    if (code === '15 74') { this.terminate(); return; }
+    if (/^1[45] (41|51|61|71)$/.test(code)) { this.terminate(); this.lift = true; return; }   // conditionals do nothing from the keyboard
+    try { this.exec(code); } catch (e) { if (e instanceof CalcErr) { this.err = true; this.terminate(); } else throw e; }
+    this.persist();
+  }
+  async flashStep(n) { this.msg = { cells: this.codeCells(n) }; this.changed(); await this.sleep(500); this.msg = null; this.changed(); }
+  codeCells(n) {   // RUN-mode SST/BST always shows step number and keycode, like the real machine -- but as mnemonics if selected
+    return this.progCells(n);
+  }
+  async pauseView() { this.msg = { cells: fmtNumber(this.x, this.dispMode, this.dispN) }; this.changed(); await this.sleep(1000); this.msg = null; this.changed(); }
+  async sst() {
+    this.terminate();
+    const n = this.pc >= NSTEPS ? 0 : this.pc + 1;
+    this.msg = { cells: this.codeCells(n) }; this.changed(); await this.sleep(350); this.msg = null;
+    this.pc = n;
+    if (n === 0) { this.changed(); return; }
+    try { const r = await this.execStep(this.prog[n]); void r; } catch (e) { if (e instanceof CalcErr) { this.err = true; } else throw e; }
+    if (!this.isEntryCode(this.prog[n])) this.terminate();
+    this.persist(); this.changed();
+  }
+  isEntryCode(c) { return /^0\d$/.test(c) || c === '73' || c === '33' || (c === '32' && this.entry); }
+
+  /* ---------- running ---------- */
+  stop() { this.running = false; this.stopReq = true; }
+  async run() {
+    if (this.running) return;
+    this.running = true; this.stopReq = false; this.changed();
+    let count = 0, t0 = Date.now();
+    try {
+      for (;;) {
+        let n = this.pc + 1; if (n > NSTEPS) n = 0;
+        this.pc = n;
+        if (n === 0) break;   // step 00: automatic stop
+        const code = this.prog[n];
+        const r = await this.execStep(code);
+        if (!this.isEntryCode(code)) this.terminate();
+        if (r === 'stop' || this.stopReq) break;
+        count++;
+        if (this.speed === 'slow') await this.sleep(/^1[45] 0[3-9]$/.test(code) ? 110 : 45);
+        else if (count % 300 === 0 || Date.now() - t0 > 30) { await this.sleep(0); t0 = Date.now(); }
+        if (this.stopReq) break;
+      }
+    } catch (e) { if (e instanceof CalcErr) { this.err = true; } else { this.running = false; throw e; } }
+    this.running = false; this.pausing = false; this.terminate(); this.persist(); this.changed();
+  }
+  async execStep(code) {
+    if (/^0\d$/.test(code) || code === '73' || code === '33') { this.digitKey(code); return; }
+    if (code === '32') { this.chs(); return; }
+    if (code === '74') return 'stop';
+    if (code === '15 74') return;
+    if (code.startsWith('13 ')) { this.pc = +code.slice(3) - 1; if (this.pc < 0) { this.pc = 0; return 'stop'; } return; }
+    const tests = { '14 41': (x, y) => x < y, '15 41': x => x < 0, '14 51': (x, y) => x >= y, '15 51': x => x >= 0,
+      '14 61': (x, y) => x !== y, '15 61': x => x !== 0, '14 71': (x, y) => x === y, '15 71': x => x === 0 };
+    if (tests[code]) { this.terminate(); this.lift = true; if (!tests[code](this.x, this.y)) this.pc = this.pc >= NSTEPS ? 0 : this.pc + 1; return; }
+    if (code === '14 74') {
+      this.terminate(); this.pausing = true; this.changed();
+      const end = Date.now() + 1000; while (Date.now() < end && !this.stopReq) await this.sleep(40);
+      this.pausing = false; this.changed(); return;
+    }
+    this.exec(code);
+  }
+  exec(code) {
+    this.terminate();
+    const p = code.split(' ');
+    switch (code) {
+      case '31': this.push(this.x); this.lift = false; return;
+      case '34': this.x = 0; this.lift = false; return;
+      case '51': this.dyad((y, x) => y + x); return;
+      case '41': this.dyad((y, x) => y - x); return;
+      case '61': this.dyad((y, x) => y * x); return;
+      case '71': this.dyad((y, x) => { if (x === 0) E(); return y / x; }); return;
+      case '21': { const t = this.x; this.x = this.y; this.y = t; this.lift = true; return; }
+      case '22': { const t = this.x; this.x = this.y; this.y = this.z; this.z = this.t; this.t = t; this.lift = true; return; }
+      case '25': case '14 25': {
+        const s = code === '25' ? 1 : -1, x = this.x, y = this.y, R = this.reg;
+        R[3] = norm(R[3] + s); R[4] = norm(R[4] + s * y); R[5] = norm(R[5] + s * x * y); R[6] = norm(R[6] + s * x * x); R[7] = norm(R[7] + s * x);
+        this.lastx = x; this.x = R[3]; this.lift = false; return;
+      }
+      case '14 21': { const n = this.reg[3]; if (n === 0) E(); this.enterValue(norm(this.reg[7] / n)); return; }
+      case '14 22': { const n = this.reg[3]; if (n <= 1) E(); const v = (this.reg[6] - this.reg[7] * this.reg[7] / n) / (n - 1); this.enterValue(norm(Math.sqrt(Math.max(0, v)))); return; }
+      case '15 21': { const x = this.x; this.lastx = x; this.x = norm(this.y * x / 100); this.lift = true; return; }
+      case '15 22': this.monad(x => { if (x === 0) E(); return 1 / x; }); return;
+      case '15 32': this.angle = 'DEG'; this.lift = true; return;
+      case '15 33': this.angle = 'RAD'; this.lift = true; return;
+      case '15 34': this.angle = 'GRAD'; this.lift = true; return;
+      case '14 33': this.reg.fill(0); this.lift = true; return;
+      case '14 34': this.x = this.y = this.z = this.t = 0; this.lift = true; return;
+      case '14 07': this.monad(x => { if (x <= 0) E(); return Math.log(x); }); return;
+      case '15 07': this.monad(x => Math.exp(x)); return;
+      case '14 08': this.monad(x => { if (x <= 0) E(); return Math.log10(x); }); return;
+      case '15 08': this.monad(x => Math.pow(10, x)); return;
+      case '14 09': { const r = this.x, th = this.ang(this.y, true); this.lastx = r; this.x = norm(r * snap(Math.cos(th))); this.y = norm(r * snap(Math.sin(th))); this.lift = true; return; }
+      case '15 09': { const x = this.x, y = this.y; this.lastx = x; this.x = norm(Math.hypot(x, y)); this.y = norm(this.ang(Math.atan2(y, x), false)); this.lift = true; return; }
+      case '14 04': this.monad(x => snap(Math.sin(this.ang(x, true)))); return;
+      case '14 05': this.monad(x => snap(Math.cos(this.ang(x, true)))); return;
+      case '14 06': this.monad(x => { if (snap(Math.cos(this.ang(x, true))) === 0) return MAXV; return Math.tan(this.ang(x, true)); }); return;
+      case '15 04': this.monad(x => { if (Math.abs(x) > 1) E(); return this.ang(Math.asin(x), false); }); return;
+      case '15 05': this.monad(x => { if (Math.abs(x) > 1) E(); return this.ang(Math.acos(x), false); }); return;
+      case '15 06': this.monad(x => this.ang(Math.atan(x), false)); return;
+      case '14 01': this.monad(x => Math.trunc(x)); return;
+      case '15 01': this.monad(x => norm(x - Math.trunc(x))); return;
+      case '14 02': this.monad(x => { if (x < 0) E(); return Math.sqrt(x); }); return;
+      case '15 02': this.monad(x => x * x); return;
+      case '14 03': this.dyad((y, x) => { if (y <= 0) E(); return Math.pow(y, x); }); return;
+      case '15 03': this.monad(x => Math.abs(x)); return;
+      case '14 00': this.monad(x => hToHms(x)); return;
+      case '15 00': this.monad(x => hmsToH(x)); return;
+      case '14 73': this.enterValue(this.lastx); return;
+      case '15 73': this.enterValue(3.141592654); return;
+      case '15 74': return;
+    }
+    if (p[0] === '14' && ['11', '12', '13'].includes(p[1])) { this.dispMode = { '11': 'FIX', '12': 'SCI', '13': 'ENG' }[p[1]]; this.dispN = +p[2][1]; this.lift = true; return; }
+    if (p[0] === '23') {
+      if (p.length === 2) { this.reg[+p[1][1]] = this.x; this.lift = true; return; }
+      const i = +p[2][1], r = this.reg[i], x = this.x; let v;
+      switch (p[1]) { case '51': v = r + x; break; case '41': v = r - x; break; case '61': v = r * x; break; case '71': if (x === 0) E(); v = r / x; break; }
+      this.lift = true;
+      if (!isFinite(v) || Math.abs(v) > MAXV) { this.reg[i] = v < 0 ? -MAXV : MAXV; this.of = true; return; }
+      this.reg[i] = norm(v); return;
+    }
+    if (p[0] === '24') { this.enterValue(this.reg[+p[1][1]]); return; }
+    E();
+  }
+  listing() { let last = NSTEPS; while (last > 0 && this.prog[last] === EMPTY) last--; const out = []; for (let i = 1; i <= last; i++) out.push({ n: i, code: this.prog[i], mn: mnemonic(this.prog[i]) }); return out; }
+  loadListing(text) {
+    const steps = [], bad = [];
+    text.replace(/\r/g, '').split('\n').forEach((l, i) => { const c = parseLine(l); if (c === undefined) return; if (c === null) bad.push(i + 1); else steps.push(c); });
+    if (bad.length) return { bad };
+    if (steps.length > NSTEPS) return { tooLong: steps.length };
+    this.prog = [''].concat(steps); while (this.prog.length < NSTEPS + 1) this.prog.push(EMPTY);
+    this.pc = 0; this.persist(); this.changed(); return { n: steps.length };
+  }
+}
+function snap(v) { return Math.abs(v) < 1e-12 ? 0 : v; }
+function hmsToH(x) { const s = x < 0 ? -1 : 1; x = Math.abs(x); const h = Math.trunc(x); const mm = Math.trunc(norm((x - h) * 100)); const ss = norm(((x - h) * 100 - mm) * 100); return s * (h + mm / 60 + ss / 3600); }
+function hToHms(x) { const s = x < 0 ? -1 : 1; x = Math.abs(x); let h = Math.trunc(x); const rem = (x - h) * 60; let m = Math.trunc(norm(rem)); let sec = norm((rem - m) * 60); if (sec >= 60) { sec -= 60; m++; } if (m >= 60) { m -= 60; h++; } return s * (h + m / 100 + sec / 10000); }
+if (typeof module !== 'undefined') module.exports = { HP25, mnemonic, parseLine, fmtNumber, CODES };
+
+</script>
+<script>
+(function () {
+  const KEY = 'hp25-emulator-state-v1';
+  const ls = { get() { try { const t = localStorage.getItem(KEY); return t ? JSON.parse(t) : null; } catch (e) { return null; } }, set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) { } } };
+  let dirty = true;
+  const C = new HP25({ load: () => ls.get(), save: s => ls.set(s), changed: () => { dirty = true; } });
+  window.HP25CALC = C;
+
+  // [code, top label, blue (g) label on key face, gold (f) label above, style]
+  const ROWS = [
+    { cls: '', keys: [['11', 'SST', '', 'FIX'], ['12', 'BST', '', 'SCI'], ['13', 'GTO', '', 'ENG'], ['14', 'f', '', '', 'gd'], ['15', 'g', '', '', 'bl']] },
+    { cls: '', keys: [['21', 'x⇄y', '%', 'x̄'], ['22', 'R↓', '1/x', 's'], ['23', 'STO', '', ''], ['24', 'RCL', '', ''], ['25', '&Sigma;+', '', '&Sigma;&minus;']] },
+    { cls: 'r4', clear: true, keys: [['31', 'ENTER↑', '', 'PREFIX', 'wide'], ['32', 'CHS', 'DEG', 'PRGM'], ['33', 'EEX', 'RAD', 'REG'], ['34', 'CL x', 'GRD', 'STK']] },
+    { cls: 'r5', keys: [['41', '&minus;', 'x&lt;0', 'x&lt;y'], ['42', '7', 'e<sup>x</sup>', 'ln'], ['43', '8', '10<sup>x</sup>', 'log'], ['44', '9', '&rarr;P', '&rarr;R']] },
+    { cls: 'r5', keys: [['51', '+', 'x&ge;0', 'x&ge;y'], ['52', '4', 'sin<sup>-1</sup>', 'sin'], ['53', '5', 'cos<sup>-1</sup>', 'cos'], ['54', '6', 'tan<sup>-1</sup>', 'tan']] },
+    { cls: 'r5', keys: [['61', '&times;', 'x&ne;0', 'x&ne;y'], ['62', '1', 'FRAC', 'INT'], ['63', '2', 'x<sup>2</sup>', '&radic;x'], ['64', '3', 'ABS', 'y<sup>x</sup>']] },
+    { cls: 'r5', keys: [['71', '&divide;', 'x=0', 'x=y'], ['72', '0', '&rarr;H', '&rarr;H.MS'], ['73', '&bull;', '&pi;', 'LAST x'], ['74', 'R/S', 'NOP', 'PAUSE']] }
+  ];
+  const keyEls = {}, keysEl = document.getElementById('keys');
+  const press = code => { C.press(code); dirty = true; };
+  ROWS.forEach(row => {
+    const r = document.createElement('div'); r.className = 'r ' + row.cls;
+    if (row.clear) { const c = document.createElement('div'); c.className = 'clear'; c.innerHTML = '<span>CLEAR</span>'; r.appendChild(c); }
+    row.keys.forEach(([code, top, blue, gold, st]) => {
+      const k = document.createElement('div'); k.className = 'k' + (st === 'wide' ? ' wide' : '');
+      const g = document.createElement('div'); g.className = 'gl'; g.innerHTML = gold || '&nbsp;'; k.appendChild(g);
+      const key = document.createElement('div'); key.className = 'key ' + (st && st !== 'wide' ? st : '');
+      key.innerHTML = '<div class="t">' + top + '</div>' + (blue ? '<div class="b">' + blue + '</div>' : '');
+      if (!blue && !st) key.querySelector('.t').style.height = '100%';
+      if (st === 'wide') key.querySelector('.t').style.height = '100%';
+      key.addEventListener('pointerdown', ev => { ev.preventDefault(); key.classList.add('down'); press(code); });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => key.addEventListener(t, () => key.classList.remove('down')));
+      keyEls[code] = key; k.appendChild(key); r.appendChild(k);
+    });
+    keysEl.appendChild(r);
+  });
+
+  const pwrK = document.getElementById('pwrK'), modeK = document.getElementById('modeK');
+  document.getElementById('pwr').addEventListener('click', () => { C.setPower(!C.on); dirty = true; });
+  document.getElementById('mode').addEventListener('click', () => { C.setMode(C.mode === 'RUN' ? 'PRGM' : 'RUN'); dirty = true; });
+
+  /* ---------- LED (12 cells, 14-segment so mnemonics can be shown) ---------- */
+  const SEG = { a: [[1, 0], [9, 0]], b: [[10, 1], [10, 9]], c: [[10, 11], [10, 19]], d: [[1, 20], [9, 20]], e: [[0, 11], [0, 19]], f: [[0, 1], [0, 9]],
+    g: [[1, 10], [4.6, 10]], G: [[5.4, 10], [9, 10]], h: [[1.3, 1.6], [4.4, 8.4]], i: [[5, 1.2], [5, 8.8]], j: [[8.7, 1.6], [5.6, 8.4]],
+    k: [[4.4, 11.6], [1.3, 18.4]], l: [[5, 11.2], [5, 18.8]], m: [[5.6, 11.6], [8.7, 18.4]] };
+  const GLYPH = {
+    '0': 'abcdef', '1': 'bc', '2': 'abgGed', '3': 'abcdgG', '4': 'fgGbc', '5': 'afgGcd', '6': 'afedcgG', '7': 'abc', '8': 'abcdefgG', '9': 'abcdfgG',
+    A: 'abcefgG', B: 'abcdilG', C: 'adef', D: 'abcdil', E: 'adefg', F: 'aefg', G: 'acdefG', H: 'bcefgG', I: 'adil', J: 'bcde', K: 'efgjm', L: 'def', M: 'bcefhj',
+    N: 'bcefhm', O: 'abcdef', P: 'abefgG', Q: 'abcdefm', R: 'abefgGm', S: 'acdfgG', T: 'ail', U: 'bcdef', V: 'efkj', W: 'bcefkm', X: 'hjkm', Y: 'hjl', Z: 'adjk',
+    r: 'eg', o: 'cdegG', '-': 'gG', '+': 'gGil', '*': 'hjkmil', '/': 'jk', '=': 'gGd', '<': 'jm', '>': 'hk', '?': 'abGl', '%': 'fgjkcG', '^': 'km', '!': 'i',
+    'Σ': 'adhk', '≠': 'gGdjk', '≥': 'hkd', ' ': ''
+  };
+  const NC = 12, CW = 26, CH = 34, PAD = 8;
+  const cv = document.getElementById('led');
+  const W = NC * CW + PAD * 2, H = CH + 22;
+  const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr); ctx.lineCap = 'round';
+  const SX = (CW - 9) / 10, SY = CH / 20, SL = 0.13;
+  function seg(x0, y0, s, col) {
+    const [[x1, y1], [x2, y2]] = SEG[s]; ctx.strokeStyle = col; ctx.beginPath();
+    ctx.moveTo(x0 + x1 * SX + (20 - y1) * SL * SX, y0 + y1 * SY); ctx.lineTo(x0 + x2 * SX + (20 - y2) * SL * SX, y0 + y2 * SY); ctx.stroke();
+  }
+  const ON = '#ff2b25', GHOST = 'rgba(255,40,30,0.045)';
+  setInterval(() => { if (C.running) dirty = true; }, 110);
+  function drawLED() {
+    ctx.clearRect(0, 0, W, H);
+    const d = C.display(); const y0 = 11; ctx.lineWidth = 2.7; ctx.shadowColor = 'rgba(255,40,30,.75)';
+    for (let n = 0; n < NC; n++) {
+      const x0 = PAD + n * CW; ctx.shadowBlur = 0;
+      for (const s in SEG) seg(x0, y0, s, GHOST);
+      let lit = '', dp = false;
+      if (d.flicker) { lit = Object.keys(SEG).filter(() => Math.random() < 0.18).join(''); dp = Math.random() < 0.15; }
+      else if (d.cells) { const c = d.cells[n]; lit = GLYPH[c.ch] !== undefined ? GLYPH[c.ch] : (GLYPH[c.ch.toUpperCase()] || ''); dp = c.dp; }
+      ctx.shadowBlur = 6;
+      for (const s of lit) seg(x0, y0, s, d.flicker ? 'rgba(255,43,37,.75)' : ON);
+      ctx.fillStyle = dp ? ON : GHOST; ctx.beginPath(); ctx.arc(x0 + 10 * SX + 3, y0 + CH, 1.8, 0, 7); ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
+  function draw() {
+    drawLED();
+    pwrK.style.left = C.on ? '22px' : '1px'; modeK.style.left = C.mode === 'RUN' ? '22px' : '1px';
+    document.getElementById('pend').textContent = C.on ? C.pendingText() : '';
+  }
+
+  /* ---------- PC keyboard ---------- */
+  const CHARK = { '0': '72', '1': '62', '2': '63', '3': '64', '4': '52', '5': '53', '6': '54', '7': '42', '8': '43', '9': '44', '.': '73', ',': '73',
+    '+': '51', '-': '41', '*': '61', '/': '71', f: '14', g: '15', s: '23', r: '24', t: '13', n: '32', x: '33', y: '21', d: '22', z: '25', ' ': '74' };
+  function flash(code) { const k = keyEls[code]; if (!k) return; k.classList.add('down'); setTimeout(() => k.classList.remove('down'), 90); }
+  window.addEventListener('keydown', ev => {
+    const tg = ev.target;
+    if (tg && (tg.tagName === 'TEXTAREA' || tg.tagName === 'INPUT' || tg.tagName === 'SELECT')) return;
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    const k = ev.key; let seq = null;
+    if (k === 'Enter') seq = ['31']; else if (k === 'Backspace') seq = ['34'];
+    else if (k === 'ArrowRight' || k === 'ArrowDown') seq = ['11']; else if (k === 'ArrowLeft' || k === 'ArrowUp') seq = ['12'];
+    else if (k === 'Escape') seq = C.prefix === '14' ? ['31'] : C.prefix ? ['14', '31'] : C.seq.length ? ['14', '31'] : null;
+    else if (k === 'p' || k === 'P') { ev.preventDefault(); C.setMode(C.mode === 'RUN' ? 'PRGM' : 'RUN'); dirty = true; return; }
+    else if (k.length === 1 && CHARK[k.toLowerCase()]) seq = [CHARK[k.toLowerCase()]];
+    if (!seq) return;
+    ev.preventDefault();
+    if (k === 'Escape') { C.seq = []; C.prefix = null; dirty = true; return; }
+    seq.forEach(c => { press(c); flash(c); });
+  });
+
+  /* ---------- program panel ---------- */
+  const src = document.getElementById('src'), pMsg = document.getElementById('pMsg'), pv = document.getElementById('pv'), spd = document.getElementById('spd');
+  function say(t, bad) { pMsg.textContent = t; pMsg.style.color = bad ? '#ef8a6b' : '#9fd29a'; clearTimeout(say.t); say.t = setTimeout(() => pMsg.textContent = '', 8000); }
+  pv.value = C.codeView ? 'kc' : 'mn'; spd.value = C.speed;
+  pv.addEventListener('change', () => { C.codeView = pv.value === 'kc'; C.persist(); dirty = true; });
+  spd.addEventListener('change', () => { C.speed = spd.value; C.persist(); });
+  document.getElementById('pShow').addEventListener('click', () => {
+    const L = C.listing();
+    src.value = L.map(s => String(s.n).padStart(2, '0') + '  ' + s.mn.padEnd(9) + '  ' + s.code).join('\n');
+    say(L.length ? L.length + ' steps.' : 'Program memory is empty (all GTO 00).');
+  });
+  document.getElementById('pLoad').addEventListener('click', () => {
+    if (C.running) { say('Stop the running program first (R/S).', true); return; }
+    const r = C.loadListing(src.value.replace(/\s{2,}\d\d(\s\d\d){0,2}\s*$/gm, ''));
+    if (r.bad) { say('Not understood on line(s) ' + r.bad.slice(0, 8).join(', ') + '.', true); return; }
+    if (r.tooLong) { say('Too long: ' + r.tooLong + ' steps (memory holds 49).', true); return; }
+    say('Loaded ' + r.n + ' steps; the calculator is at step 00. In RUN mode key the input and press R/S.'); dirty = true;
+  });
+  document.getElementById('pCopy').addEventListener('click', () => {
+    src.select(); (navigator.clipboard ? navigator.clipboard.writeText(src.value) : Promise.reject()).then(() => say('Copied.'), () => { try { document.execCommand('copy'); say('Copied.'); } catch (e) { say('Copy failed.', true); } });
+  });
+  const SAMPLES = {
+    sphere: { t: 'Surface area of a sphere from its diameter (A = π d²): key the diameter, press R/S.', p: 'X^2\nPI\n*\nGTO 00' },
+    quad: { t: 'Roots of x² + a·x + b = 0 (real roots): key a ENTER b, press R/S. Root 1 is shown for a second (PAUSE), the program stops on root 2.', p:
+      'STO 1\nRDN\n2\n/\nCHS\nSTO 0\nX^2\nRCL 1\n-\nSQRT\nSTO 2\nRCL 0\n+\nPSE\nRCL 0\nRCL 2\n-\nGTO 00' },
+    fact: { t: 'n! by repeated multiplication with a loop: key n (a whole number ≥ 1), press R/S.', p:
+      'STO 0\n1\nSTO 1\nRCL 0\nST* 1\n1\nST- 0\nRCL 0\nX≠0?\nGTO 04\nRCL 1\nGTO 00' },
+    prime: { t: 'Prime test: key a whole number n > 2, press R/S. Shows 0 if n is prime, otherwise its smallest factor.', p:
+      'STO 0\n2\nSTO 1\nRCL 0\nRCL 1\n/\nFRC\nX=0?\nGTO 19\nRCL 1\n1\n+\nSTO 1\nX^2\nRCL 0\nX<Y?\nGTO 21\nGTO 04\nRCL 1\nGTO 00\n0\nGTO 00' }
+  };
+  document.getElementById('pSample').addEventListener('change', e => {
+    const s = SAMPLES[e.target.value]; e.target.value = ''; if (!s) return;
+    src.value = s.p; say(s.t + ' Press "Load listing into memory".');
+  });
+
+  const calc = document.getElementById('calc'), scaler = document.getElementById('scaler');
+  function fit() {
+    const s = Math.min(1.15, (window.innerHeight - 30) / 692, (window.innerWidth - 24) / 400);
+    calc.style.transformOrigin = 'top left'; calc.style.transform = 'scale(' + s + ')';
+    scaler.style.width = (400 * s) + 'px'; scaler.style.height = (692 * s) + 'px';
+  }
+  window.addEventListener('resize', fit); fit();
+  (function loop() { if (dirty) { dirty = false; draw(); } requestAnimationFrame(loop); })();
+  document.addEventListener('click', e => { if (e.target.tagName === 'BUTTON') e.target.blur(); });
+  window.addEventListener('beforeunload', () => C.persist());
+})();
+</script>
+</body>
+</html>
